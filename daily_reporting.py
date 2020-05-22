@@ -13,14 +13,14 @@ import datetime
 os.getcwd()
 os.chdir('C:\\Users\\innov8ag\\Documents\\Walla2COVID19')
 # Read in Data
-dat = pd.read_excel('ww_cases.xlsx', sheet_name = 'COVID-19 Cases')
+dat = pd.read_excel('WW County COVID 19 Dashboard Inputs.xlsx', sheet_name = 'Sheet1')
 
 # clean data
 raw = clean_data(dat)
 
 # specify date
 start_date = datetime.date(2020, 3, 22)
-end_date = datetime.date(2020, 5, 11)
+end_date = datetime.date(2020, 5, 15)
 
 # generate report
 daily_summary_through_time(start_date, end_date, 'Burbank', raw)
@@ -43,10 +43,10 @@ daily_summary_through_time(start_date, end_date, 'Walla Walla County', raw)
 def clean_data(data):
     
     # Select columns of interest
-    raw = dat[['WW Case #', 'test date', 'Date Recovered', 'Recovered','Sex', 'Age', 'City']].copy()
+    raw = dat[['WW Case #', 'test date', 'Date Recovered', 'Recovered','Sex', 'Age', 'City', 'Source of Infection']].copy()
     
     # Rename the columns
-    raw.columns = ['WW Case #', 'Test date', 'Recovery/Death Date', 'Recovered','Sex', 'Age', 'City']
+    raw.columns = ['WW Case #', 'Test date', 'Recovery/Death Date', 'Recovered','Sex', 'Age', 'City', 'Source of Infection']
     
     # change all the dates into datetime.date object for easier comparison 
     raw['Test date'] = [raw.loc[k, 'Test date'].date() for k in range(raw.shape[0])]
@@ -55,7 +55,7 @@ def clean_data(data):
     #  Fill in missing dates for Recovery/Death date
     #  Protocols: Recovery date = Test Date + two weeks
     # =============================================================================
-    raw['Recovery/Death Date'] = [raw.loc[k, 'Test date']+datetime.timedelta(days=14) if pd.isnull(raw.loc[k, 'Recovery/Death Date']) and pd.notnull(raw.loc[k, 'Recovered']) else raw.loc[k, 'Recovery/Death Date'] for k in range(raw.shape[0])]
+    # raw['Recovery/Death Date'] = [raw.loc[k, 'Test date']+datetime.timedelta(days=14) if pd.isnull(raw.loc[k, 'Recovery/Death Date']) and pd.notnull(raw.loc[k, 'Recovered']) else raw.loc[k, 'Recovery/Death Date'] for k in range(raw.shape[0])]
     
     # Categorized the age group
     raw['Age'] = raw['Age'].apply(age_placement)
@@ -107,12 +107,12 @@ def daily_summary_through_time(start_date, end_date, city_name, data):
         dat = data[data['City'] == city_name].copy()   
     records = pd.DataFrame(columns = get_esri_format().columns)
     
-    for k, today in enumerate(daterange(start_dt, end_dt)):
+    for k, today in enumerate(daterange(start_date, end_date)):
         record = daily_summary(today, dat, city_name)
         records = records.append(record)
         
     fname = city_name.replace(' ', '')+'.csv'
-    records.to_csv(fname, index = False)
+    records.to_csv('Reporting\\'+fname, index = False)
     
     return records
 
@@ -178,4 +178,21 @@ def daily_summary(today, raw_county, city_name):
     daily_summary.loc[k, 'positiveincrease'] = daily_summary.loc[k, 'positive'] - yesterday_total_records.shape[0]
     daily_summary.loc[k, 'deathincrease'] = daily_summary.loc[k, 'deaths'] - yesterday_death_records.shape[0]
     
+    
+    
+    daily_summary.loc[k, 'sourceclosecontact'] = uptodate_total_records[uptodate_total_records['Source of Infection']=='close contact'].shape[0]
+    daily_summary.loc[k, 'sourceTravel'] = uptodate_total_records[uptodate_total_records['Source of Infection']=='travel'].shape[0]
+    daily_summary.loc[k, 'sourcecommunity'] = uptodate_total_records[uptodate_total_records['Source of Infection']=='other'].shape[0]
+    daily_summary.loc[k, 'sourceother'] = uptodate_total_records[uptodate_total_records['Source of Infection']=='community'].shape[0]
+
     return daily_summary
+
+
+
+
+
+
+
+
+
+
