@@ -18,25 +18,56 @@ dat = pd.read_excel('WW County COVID 19 Dashboard Inputs.xlsx', sheet_name = 'Sh
 # clean data
 raw = clean_data(dat)
 
-# specify date
-start_date = datetime.date(2020, 3, 22)
-end_date = datetime.date(2020, 5, 15)
 
-# generate report
+# ==========================================================================
+# Generate daily report through a date range for each region
+
+# 1. specify date range
+start_date = datetime.date(2020, 3, 22)
+end_date = datetime.date(2020, 5, 18)
+
+# 2. generate report
 daily_summary_through_time(start_date, end_date, 'Burbank', raw)
 daily_summary_through_time(start_date, end_date, 'Walla Walla', raw)
 daily_summary_through_time(start_date, end_date, 'College Place', raw)
-daily_summary_through_time(start_date, end_date, 'Wallula ', raw)
+daily_summary_through_time(start_date, end_date, 'Wallula', raw)
 daily_summary_through_time(start_date, end_date, 'Prescott', raw)
 daily_summary_through_time(start_date, end_date, 'Touchet', raw)
 daily_summary_through_time(start_date, end_date, 'Walla Walla County', raw)
+# ==========================================================================
+
+
+
+# ==========================================================================
+# Generate daily report for a specific day for all each region and concat the
+# records into one file
+
+today = datetime.date(2020, 5, 18)
+daily_summary_all_cities(today, raw)
+# ==========================================================================
 
 
 
 
 
 
+def daily_summary_all_cities(today, raw):
 
+    records = pd.DataFrame(columns = get_esri_format().columns)
+    cities = ['Walla Walla County', 'Walla Walla','College Place',  'Burbank', 'Touchet', 'Wallula', 'Prescott']
+    for city_name in cities:
+        if city_name == 'Walla Walla County':
+            dat = raw.copy()
+        else:
+            dat = raw[raw['City'] == city_name].copy()   
+            
+        record = daily_summary(today, raw, city_name)
+        records = records.append(record)
+        
+    fname = 'AllCityReport'+today.isoformat()+'.csv'
+    records.to_csv('Reporting\\'+fname, index = False)
+    
+    return records
 
 
 
@@ -129,7 +160,7 @@ def daily_summary(today, raw_county, city_name):
                                                       
     # Divide Inactive into Died and Recovered
     uptodate_recovered_records = uptodate_inactive_records.loc[uptodate_inactive_records['Recovered']== 'Yes',:]
-    uptodate_death_records = uptodate_inactive_records.loc[uptodate_inactive_records['Recovered']!= 'Yes',:]
+    uptodate_death_records = uptodate_inactive_records.loc[uptodate_inactive_records['Recovered']== 'Deceased',:]
     
     
     # Find total cases up to yesterday
